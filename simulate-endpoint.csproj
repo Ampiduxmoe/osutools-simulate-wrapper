@@ -8,14 +8,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FSharp.Core" Version="8.0.200" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
 
   <ItemGroup>
      <Reference Include="PerformanceCalculator">
-       <HintPath>..\osu-tools\PerformanceCalculator\bin\Release\net8.0\PerformanceCalculator.dll</HintPath>
+       <HintPath>..\osu-tools\PerformanceCalculator\bin\Release\net6.0\PerformanceCalculator.dll</HintPath>
      </Reference>
-    </ItemGroup>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="FsBeatmapProcessor">
+      <Name>\submodules\FsBeatmapParser\bin\Release\net8.0\FsBeatmapProcessor.dll</Name>
+    </Reference>
+  </ItemGroup>
 
 </Project>

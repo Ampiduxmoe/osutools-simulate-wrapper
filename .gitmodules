@@ -1,0 +1,3 @@
+[submodule "submodules/FsBeatmapParser"]
+	path = submodules/FsBeatmapParser
+	url = git@github.com:FunOrange/FsBeatmapParser.git
