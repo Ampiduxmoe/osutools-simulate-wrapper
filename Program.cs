@@ -137,12 +137,30 @@ static void ApplyEZ(Beatmap map)
     map.HPDrainRate = BeatmapDifficulty.CalculateEasyModHP(map.HPDrainRate);
 }
 
-static void ApplyDA(Beatmap map, DifficultyAdjustSettings da)
+static bool ApplyDA(Beatmap map, DifficultyAdjustSettings da)
 {
-    map.ApproachRate = da.ar;
-    map.CircleSize = da.cs;
-    map.OverallDifficulty = da.od;
-    map.HPDrainRate = da.hp;
+    var beatmapChanged = false;
+    if (da.ar != null && da.ar != map.ApproachRate)
+    {
+        map.ApproachRate = (decimal)da.ar;
+        beatmapChanged = true;
+    }
+    if (da.cs != null && da.cs != map.CircleSize)
+    {
+        map.CircleSize = (decimal)da.cs;
+        beatmapChanged = true;
+    }
+    if (da.od != null && da.od != map.OverallDifficulty)
+    {
+        map.OverallDifficulty = (decimal)da.od;
+        beatmapChanged = true;
+    }
+    if (da.hp != null && da.hp != map.HPDrainRate)
+    {
+        map.HPDrainRate = (decimal)da.hp;
+        beatmapChanged = true;
+    }
+    return beatmapChanged;
 }
 
 static bool ApplyMods(Beatmap map, IEnumerable<string> mods, DifficultyAdjustSettings? da_settings)
@@ -152,8 +170,7 @@ static bool ApplyMods(Beatmap map, IEnumerable<string> mods, DifficultyAdjustSet
     {
         if (da_settings != null)
         {
-            ApplyDA(map, da_settings);
-            beatmapChanged = true;
+            beatmapChanged |= ApplyDA(map, da_settings);
         }
     }
     else if (mods.Any(m => m.ToLower() == "hr"))
@@ -321,10 +338,10 @@ record SimulateHtRequest(
 };
 
 record DifficultyAdjustSettings(
-    decimal ar,
-    decimal cs,
-    decimal hp,
-    decimal od
+    decimal? ar = null,
+    decimal? cs = null,
+    decimal? hp = null,
+    decimal? od = null
 ) {
     public override string ToString()
     {
