@@ -1,8 +1,7 @@
-public static class BeatmapDifficulty {
-    public const decimal MIN_AR = 0M;
-    public const decimal MAX_AR = 11.5M;
-    public const decimal MIN_OD = 0M;
-    public const decimal MAX_OD = 11M + 2M/3M;
+using FsBeatmapProcessor;
+
+public static class BeatmapDifficulty
+{
     public static decimal CalculateMultipliedAR(decimal ar, decimal speedMultiplier)
     {
         decimal newApproachDuration = ApproachRateToMs(ar) / speedMultiplier;
@@ -59,4 +58,78 @@ public static class BeatmapDifficulty {
     }
     private static decimal OverallDifficultyToMs(decimal od) => 80.0M - 6.0M * od;
     private static decimal MsToOverallDifficulty(decimal ms) => (80.0M - ms) / 6.0M;
+
+    public static void ApplyHR(Beatmap map)
+    {
+        map.ApproachRate = CalculateHardRockModAR(map.ApproachRate);
+        map.CircleSize = CalculateHardRockModCS(map.CircleSize);
+        map.OverallDifficulty = CalculateHardRockModOD(map.OverallDifficulty);
+        map.HPDrainRate = CalculateHardRockModHP(map.HPDrainRate);
+    }
+
+    public static void ApplyEZ(Beatmap map)
+    {
+        map.ApproachRate = CalculateEasyModAR(map.ApproachRate);
+        map.CircleSize = CalculateEasyModCS(map.CircleSize);
+        map.OverallDifficulty = CalculateEasyModOD(map.OverallDifficulty);
+        map.HPDrainRate = CalculateEasyModHP(map.HPDrainRate);
+    }
+
+    public static bool ApplyDA(Beatmap map, DifficultyAdjustSettings da)
+    {
+        var beatmapChanged = false;
+        if (da.ar != null && da.ar != map.ApproachRate)
+        {
+            map.ApproachRate = (decimal)da.ar;
+            beatmapChanged = true;
+        }
+        if (da.cs != null && da.cs != map.CircleSize)
+        {
+            map.CircleSize = (decimal)da.cs;
+            beatmapChanged = true;
+        }
+        if (da.od != null && da.od != map.OverallDifficulty)
+        {
+            map.OverallDifficulty = (decimal)da.od;
+            beatmapChanged = true;
+        }
+        if (da.hp != null && da.hp != map.HPDrainRate)
+        {
+            map.HPDrainRate = (decimal)da.hp;
+            beatmapChanged = true;
+        }
+        return beatmapChanged;
+    }
+
+    public static bool ApplyMods(Beatmap map, IEnumerable<string> mods, DifficultyAdjustSettings? da_settings)
+    {
+        var beatmapChanged = false;
+        if (mods.Any(m => m.ToLower() == "da"))
+        {
+            if (da_settings != null)
+            {
+                beatmapChanged |= ApplyDA(map, da_settings);
+            }
+        }
+        else if (mods.Any(m => m.ToLower() == "hr"))
+        {
+            ApplyHR(map);
+            beatmapChanged = true;
+        }
+        else if (mods.Any(m => m.ToLower() == "ez"))
+        {
+            ApplyEZ(map);
+            beatmapChanged = true;
+        }
+        return beatmapChanged;
+    }
+
+    public static void ChangeBeatmapSpeed(Beatmap map, decimal speedMultiplier)
+    {
+        var ar = map.ApproachRate;
+        var od = map.OverallDifficulty;
+        map.SetRate(speedMultiplier);
+        map.ApproachRate = CalculateMultipliedAR(ar, speedMultiplier);
+        map.OverallDifficulty = CalculateMultipliedOD(od, speedMultiplier);
+    }
 }

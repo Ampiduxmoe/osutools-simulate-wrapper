@@ -1,73 +1,6 @@
 using FsBeatmapProcessor;
-
-static void AddNamedArg(List<string> argsList, string name, object value)
-{
-    argsList.Add($"--{name}");
-    argsList.Add(value.ToString()!);
-}
-
-static List<string> GeneratePerformanceCalculatorArgs(SimulateRequest request, string? filePath = null)
-{
-    var simulateArgs = new List<string>
-    {
-        "simulate", "osu"
-    };
-    foreach (var mod in request.mods)
-    {
-        AddNamedArg(simulateArgs, "mod", mod);
-    }
-    if (request.combo != null)
-    {
-        AddNamedArg(simulateArgs, "combo", request.combo);
-    }
-    AddNamedArg(simulateArgs, "misses", request.misses);
-    AddNamedArg(simulateArgs, "mehs", request.mehs);
-    AddNamedArg(simulateArgs, "goods", request.goods);
-    simulateArgs.Add("--json");
-    if (filePath != null)
-    {
-        simulateArgs.Add(filePath); 
-    }
-    else
-    {
-        simulateArgs.Add(request.beatmap_id.ToString()); 
-    } 
-    return simulateArgs;  
-}
-
-static List<string> GeneratePerformanceCalculatorArgsDTHT(SimulateRequest request, string? filePath = null)
-{
-    var simulateArgs = new List<string>
-    {
-        "simulate", "osu"
-    };
-    foreach (var mod in request.mods)
-    {
-        string[] modsToSkip = ["da", "hr", "ez"];
-        if (modsToSkip.Any(m => m == mod.ToLower()))
-        {
-            continue;
-        }
-        AddNamedArg(simulateArgs, "mod", mod);
-    }
-    if (request.combo != null)
-    {
-        AddNamedArg(simulateArgs, "combo", request.combo);
-    }
-    AddNamedArg(simulateArgs, "misses", request.misses);
-    AddNamedArg(simulateArgs, "mehs", request.mehs);
-    AddNamedArg(simulateArgs, "goods", request.goods);
-    simulateArgs.Add("--json");
-    if (filePath != null)
-    {
-        simulateArgs.Add(filePath); 
-    }
-    else
-    {
-        simulateArgs.Add(request.beatmap_id.ToString()); 
-    } 
-    return simulateArgs;  
-}
+using static SimulationArgs;
+using static BeatmapDifficulty;
 
 static string GetSimulationJson(List<string> simulationArgs, object simulationLock)
 {
@@ -112,79 +45,6 @@ static Beatmap GetTmpBeatmap(int id)
     return new Beatmap(tmpBeatmapFilePath);
 }
 
-static void ChangeBeatmapSpeed(Beatmap map, decimal speedMultiplier)
-{
-    var ar = map.ApproachRate;
-    var od = map.OverallDifficulty;
-    map.SetRate(speedMultiplier);
-    map.ApproachRate = BeatmapDifficulty.CalculateMultipliedAR(ar, speedMultiplier);
-    map.OverallDifficulty = BeatmapDifficulty.CalculateMultipliedOD(od, speedMultiplier);
-}
-
-static void ApplyHR(Beatmap map)
-{
-    map.ApproachRate = BeatmapDifficulty.CalculateHardRockModAR(map.ApproachRate);
-    map.CircleSize = BeatmapDifficulty.CalculateHardRockModCS(map.CircleSize);
-    map.OverallDifficulty = BeatmapDifficulty.CalculateHardRockModOD(map.OverallDifficulty);
-    map.HPDrainRate = BeatmapDifficulty.CalculateHardRockModHP(map.HPDrainRate);
-}
-
-static void ApplyEZ(Beatmap map)
-{
-    map.ApproachRate = BeatmapDifficulty.CalculateEasyModAR(map.ApproachRate);
-    map.CircleSize = BeatmapDifficulty.CalculateEasyModCS(map.CircleSize);
-    map.OverallDifficulty = BeatmapDifficulty.CalculateEasyModOD(map.OverallDifficulty);
-    map.HPDrainRate = BeatmapDifficulty.CalculateEasyModHP(map.HPDrainRate);
-}
-
-static bool ApplyDA(Beatmap map, DifficultyAdjustSettings da)
-{
-    var beatmapChanged = false;
-    if (da.ar != null && da.ar != map.ApproachRate)
-    {
-        map.ApproachRate = (decimal)da.ar;
-        beatmapChanged = true;
-    }
-    if (da.cs != null && da.cs != map.CircleSize)
-    {
-        map.CircleSize = (decimal)da.cs;
-        beatmapChanged = true;
-    }
-    if (da.od != null && da.od != map.OverallDifficulty)
-    {
-        map.OverallDifficulty = (decimal)da.od;
-        beatmapChanged = true;
-    }
-    if (da.hp != null && da.hp != map.HPDrainRate)
-    {
-        map.HPDrainRate = (decimal)da.hp;
-        beatmapChanged = true;
-    }
-    return beatmapChanged;
-}
-
-static bool ApplyMods(Beatmap map, IEnumerable<string> mods, DifficultyAdjustSettings? da_settings)
-{
-    var beatmapChanged = false;
-    if (mods.Any(m => m.ToLower() == "da"))
-    {
-        if (da_settings != null)
-        {
-            beatmapChanged |= ApplyDA(map, da_settings);
-        }
-    }
-    else if (mods.Any(m => m.ToLower() == "hr"))
-    {
-        ApplyHR(map);
-        beatmapChanged = true;
-    }
-    else if (mods.Any(m => m.ToLower() == "ez"))
-    {
-        ApplyEZ(map);
-        beatmapChanged = true;
-    }
-    return beatmapChanged;
-}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -194,9 +54,9 @@ object simulationLock = new();
 object mapEditingLock = new();
 var httpClient = new HttpClient();
 
-app.MapPost("/simulate", async (SimulateRequest request) =>
+app.MapPost("/simulate/osu", async (SimulateRequestOsu request) =>
 {
-    Console.WriteLine($"POST: /simulate ({request})");
+    Console.WriteLine($"POST: /simulate/osu ({request})");
     var beatmapId = request.beatmap_id;
     await DownloadBeatmapIfNeeded(beatmapId, httpClient);
     string response;
@@ -221,9 +81,9 @@ app.MapPost("/simulate", async (SimulateRequest request) =>
     Console.WriteLine(response);
     return response;
 });
-app.MapPost("/simulate/dt", async (SimulateDtRequest request) =>
+app.MapPost("/simulate/osu/dt", async (SimulateRequestOsuDt request) =>
 {
-    Console.WriteLine($"POST: /simulate/dt ({request})");
+    Console.WriteLine($"POST: /simulate/osu/dt ({request})");
     var beatmapId = request.beatmap_id;
     await DownloadBeatmapIfNeeded(beatmapId, httpClient);
     string response;
@@ -251,9 +111,9 @@ app.MapPost("/simulate/dt", async (SimulateDtRequest request) =>
     Console.WriteLine(response);
     return response;
 });
-app.MapPost("/simulate/ht", async (SimulateHtRequest request) =>
+app.MapPost("/simulate/osu/ht", async (SimulateRequestOsuHt request) =>
 {
-    Console.WriteLine($"POST: /simulate/ht ({request})");
+    Console.WriteLine($"POST: /simulate/osu/ht ({request})");
     var beatmapId = request.beatmap_id;
     await DownloadBeatmapIfNeeded(beatmapId, httpClient);
     string response;
@@ -281,70 +141,54 @@ app.MapPost("/simulate/ht", async (SimulateHtRequest request) =>
     Console.WriteLine(response);
     return response;
 });
+app.MapPost("/simulate/taiko", async (SimulateRequestTaiko request) =>
+{
+    Console.WriteLine($"POST: /simulate/taiko ({request})");
+    var beatmapId = request.beatmap_id;
+    await DownloadBeatmapIfNeeded(beatmapId, httpClient);
+    string response;
+    lock (mapEditingLock)
+    {
+        var args = GeneratePerformanceCalculatorArgs(request);
+        response = GetSimulationJson(args, simulationLock);
+    }
+    Console.WriteLine("Response:");
+    Console.WriteLine(response);
+    return response;
+});
+app.MapPost("/simulate/ctb", async (SimulateRequestCtb request) =>
+{
+    Console.WriteLine($"POST: /simulate/ctb ({request})");
+    var beatmapId = request.beatmap_id;
+    await DownloadBeatmapIfNeeded(beatmapId, httpClient);
+    string response;
+    lock (mapEditingLock)
+    {
+        var args = GeneratePerformanceCalculatorArgs(request);
+        response = GetSimulationJson(args, simulationLock);
+    }
+    Console.WriteLine("Response:");
+    Console.WriteLine(response);
+    return response;
+});
+app.MapPost("/simulate/mania", async (SimulateRequestMania request) =>
+{
+    Console.WriteLine($"POST: /simulate/mania ({request})");
+    var beatmapId = request.beatmap_id;
+    await DownloadBeatmapIfNeeded(beatmapId, httpClient);
+    string response;
+    lock (mapEditingLock)
+    {
+        var args = GeneratePerformanceCalculatorArgs(request);
+        response = GetSimulationJson(args, simulationLock);
+    }
+    Console.WriteLine("Response:");
+    Console.WriteLine(response);
+    return response;
+});
 app.MapGet("/simulate/status", () =>
 {
     return "ok";
 });
 
 app.Run();
-
-record SimulateRequest(
-    string[] mods,
-    int misses,
-    int mehs,
-    int goods,
-    int beatmap_id,
-    int? combo = null,
-    DifficultyAdjustSettings? da_settings = null
-) {
-    public override string ToString()
-    {
-        return $"SimulateRequest {{ mods = [{string.Join(", ", mods)}], combo = {combo}, misses = {misses}, mehs = {mehs}, goods = {goods}, beatmap_id = {beatmap_id} }}";
-    }
-};
-
-record SimulateDtRequest(
-    decimal dt_rate,
-    string[] mods,
-    int misses,
-    int mehs,
-    int goods,
-    int beatmap_id,
-    int? combo = null,
-    DifficultyAdjustSettings? da_settings = null
-) : SimulateRequest(mods, misses, mehs, goods, beatmap_id, combo, da_settings)
-{
-    public override string ToString()
-    {
-        return $"SimulateDtRequest {{ dt_rate = {dt_rate}, mods = [{string.Join(", ", mods)}], combo = {combo}, misses = {misses}, mehs = {mehs}, goods = {goods}, beatmap_id = {beatmap_id} }}";
-    }
-};
-
-record SimulateHtRequest(
-    decimal ht_rate,
-    string[] mods,
-    int misses,
-    int mehs,
-    int goods,
-    int beatmap_id,
-    int? combo = null,
-    DifficultyAdjustSettings? da_settings = null
-) : SimulateRequest(mods, misses, mehs, goods, beatmap_id, combo, da_settings)
-{
-    public override string ToString()
-    {
-        return $"SimulateHtRequest {{ ht_rate = {ht_rate}, mods = [{string.Join(", ", mods)}], combo = {combo}, misses = {misses}, mehs = {mehs}, goods = {goods}, beatmap_id = {beatmap_id} }}";
-    }
-};
-
-record DifficultyAdjustSettings(
-    decimal? ar = null,
-    decimal? cs = null,
-    decimal? hp = null,
-    decimal? od = null
-) {
-    public override string ToString()
-    {
-        return $"DifficultyAdjustSettings {{ ar = {ar}, cs = {cs}, hp = {hp}, od = {od} }}";
-    }
-}
