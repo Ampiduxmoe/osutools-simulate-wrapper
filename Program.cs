@@ -52,11 +52,13 @@ var app = builder.Build();
 
 object simulationLock = new();
 object mapEditingLock = new();
+var requestCount = 0;
 var httpClient = new HttpClient();
 
 app.MapPost("/simulate/osu", async (SimulateRequestOsu request) =>
 {
-    Console.WriteLine($"POST: /simulate/osu ({request})");
+    var requestNumber = ++requestCount;
+    Console.WriteLine($"[{requestNumber}] POST: /simulate/osu ({request})");
     var beatmapId = request.beatmap_id;
     await DownloadBeatmapIfNeeded(beatmapId, httpClient);
     string response;
@@ -77,13 +79,13 @@ app.MapPost("/simulate/osu", async (SimulateRequestOsu request) =>
         response = GetSimulationJson(args, simulationLock);
         File.Delete(tmpBeatmapFilePath);
     }
-    Console.WriteLine("Response:");
-    Console.WriteLine(response);
+    Console.WriteLine($"[{requestNumber}] Response:\n{response}");
     return response;
 });
 app.MapPost("/simulate/osu/dt", async (SimulateRequestOsuDt request) =>
 {
-    Console.WriteLine($"POST: /simulate/osu/dt ({request})");
+    var requestNumber = ++requestCount;
+    Console.WriteLine($"[{requestNumber}] POST: /simulate/osu/dt ({request})");
     var beatmapId = request.beatmap_id;
     await DownloadBeatmapIfNeeded(beatmapId, httpClient);
     string response;
@@ -107,13 +109,13 @@ app.MapPost("/simulate/osu/dt", async (SimulateRequestOsuDt request) =>
         response = GetSimulationJson(args, simulationLock);
         File.Delete(tmpBeatmapFilePath);
     }
-    Console.WriteLine("Response:");
-    Console.WriteLine(response);
+    Console.WriteLine($"[{requestNumber}] Response:\n{response}");
     return response;
 });
 app.MapPost("/simulate/osu/ht", async (SimulateRequestOsuHt request) =>
 {
-    Console.WriteLine($"POST: /simulate/osu/ht ({request})");
+    var requestNumber = ++requestCount;
+    Console.WriteLine($"[{requestNumber}] POST: /simulate/osu/ht ({request})");
     var beatmapId = request.beatmap_id;
     await DownloadBeatmapIfNeeded(beatmapId, httpClient);
     string response;
@@ -137,13 +139,13 @@ app.MapPost("/simulate/osu/ht", async (SimulateRequestOsuHt request) =>
         response = GetSimulationJson(args, simulationLock);
         File.Delete(tmpBeatmapFilePath);
     }
-    Console.WriteLine("Response:");
-    Console.WriteLine(response);
+    Console.WriteLine($"[{requestNumber}] Response:\n{response}");
     return response;
 });
 app.MapPost("/simulate/taiko", async (SimulateRequestTaiko request) =>
 {
-    Console.WriteLine($"POST: /simulate/taiko ({request})");
+    var requestNumber = ++requestCount;
+    Console.WriteLine($"[{requestNumber}] POST: /simulate/taiko ({request})");
     var beatmapId = request.beatmap_id;
     await DownloadBeatmapIfNeeded(beatmapId, httpClient);
     string response;
@@ -152,13 +154,13 @@ app.MapPost("/simulate/taiko", async (SimulateRequestTaiko request) =>
         var args = GeneratePerformanceCalculatorArgs(request);
         response = GetSimulationJson(args, simulationLock);
     }
-    Console.WriteLine("Response:");
-    Console.WriteLine(response);
+    Console.WriteLine($"[{requestNumber}] Response:\n{response}");
     return response;
 });
 app.MapPost("/simulate/ctb", async (SimulateRequestCtb request) =>
 {
-    Console.WriteLine($"POST: /simulate/ctb ({request})");
+    var requestNumber = ++requestCount;
+    Console.WriteLine($"[{requestNumber}] POST: /simulate/ctb ({request})");
     var beatmapId = request.beatmap_id;
     await DownloadBeatmapIfNeeded(beatmapId, httpClient);
     string response;
@@ -167,13 +169,13 @@ app.MapPost("/simulate/ctb", async (SimulateRequestCtb request) =>
         var args = GeneratePerformanceCalculatorArgs(request);
         response = GetSimulationJson(args, simulationLock);
     }
-    Console.WriteLine("Response:");
-    Console.WriteLine(response);
+    Console.WriteLine($"[{requestNumber}] Response:\n{response}");
     return response;
 });
 app.MapPost("/simulate/mania", async (SimulateRequestMania request) =>
 {
-    Console.WriteLine($"POST: /simulate/mania ({request})");
+    var requestNumber = ++requestCount;
+    Console.WriteLine($"[{requestNumber}] POST: /simulate/mania ({request})");
     var beatmapId = request.beatmap_id;
     await DownloadBeatmapIfNeeded(beatmapId, httpClient);
     string response;
@@ -182,8 +184,7 @@ app.MapPost("/simulate/mania", async (SimulateRequestMania request) =>
         var args = GeneratePerformanceCalculatorArgs(request);
         response = GetSimulationJson(args, simulationLock);
     }
-    Console.WriteLine("Response:");
-    Console.WriteLine(response);
+    Console.WriteLine($"[{requestNumber}] Response:\n{response}");
     return response;
 });
 app.MapGet("/simulate/status", () =>
